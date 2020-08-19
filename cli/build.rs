@@ -4,6 +4,8 @@ mod op_fetch_asset;
 use deno_core::js_check;
 use deno_core::CoreIsolate;
 use deno_core::StartupData;
+use serde_json;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 use std::path::Path;
@@ -71,8 +73,12 @@ fn create_compiler_snapshot(
 }
 
 fn ts_version() -> String {
-  // TODO(ry) This should be automatically extracted from typescript.js
-  "3.9.7".to_string()
+  let v: Value = serde_json::from_slice(
+    &std::fs::read("../third_party/node_modules/typescript/package.json")
+      .unwrap(),
+  )
+  .unwrap();
+  v["version"].as_str().unwrap().into()
 }
 
 fn main() {
