@@ -39,6 +39,14 @@ unitTest(function urlSearchParamsWithTilde(): void {
   assertEquals(searchParams, "str=hello%7Eworld");
 });
 
+unitTest(function urlSearchParamsWithLineBreak(): void {
+  const init = [
+    ["str", "hello\nworld"],
+  ];
+  const searchParams = new URLSearchParams(init).toString();
+  assertEquals(searchParams, "str=hello%0Aworld");
+});
+
 unitTest(function urlSearchParamsInitString(): void {
   const init = "c=4&a=2&b=3&%C3%A1=1";
   const searchParams = new URLSearchParams(init);
