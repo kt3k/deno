@@ -64,14 +64,24 @@ impl<'a> From<&'a String> for MediaType {
 impl<'a> From<&'a ModuleSpecifier> for MediaType {
   fn from(specifier: &'a ModuleSpecifier) -> Self {
     let url = specifier.as_url();
-    let path = if url.scheme() == "file" {
-      if let Ok(path) = url.to_file_path() {
-        path
-      } else {
-        PathBuf::from(url.path())
+    let path = match url.scheme() {
+      "file" => {
+        if let Ok(path) = url.to_file_path() {
+          path
+        } else {
+          PathBuf::from(url.path())
+        }
       }
-    } else {
-      PathBuf::from(url.path())
+      "http" | "https" | "data" => PathBuf::from(url.path()),
+      _ => {
+        if url.path() == "" {
+          // Uses host as path when the path is empty
+          // to allow the specifier like "foo://bar.ts"
+          PathBuf::from(url.host().map_or("".to_string(), |h| format!("{}", h)))
+        } else {
+          PathBuf::from(url.path())
+        }
+      }
     };
     MediaType::from_path(&path)
   }
@@ -242,6 +252,7 @@ mod tests {
       ("https://deno.land/x/mod.ts", MediaType::TypeScript),
       ("https://deno.land/x/mod.js", MediaType::JavaScript),
       ("https://deno.land/x/mod.txt", MediaType::Unknown),
+      ("foo://mod.ts", MediaType::TypeScript),
     ];
 
     for (specifier, expected) in fixtures {
