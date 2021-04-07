@@ -160,6 +160,15 @@ jobs:
           cargo --version
           deno --version
 
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            ./target
+          key: cache-${{ matrix.os }}-${{ matrix.kind }}-${{ hashFiles('Cargo.lock') }}
+
       - name: test_format.js
         if: matrix.kind == 'lint'
         run: deno run --unstable --allow-write --allow-read --allow-run ./tools/format.js --check
