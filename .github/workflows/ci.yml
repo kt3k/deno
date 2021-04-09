@@ -163,6 +163,12 @@ jobs:
       - name: Restore timestamps
         run: python ./tools/restore_mtime.py
 
+      # Touches all javascript files because these files' mtimes are not handled
+      # correctly by cargo. So we force rebuild these files.
+      - name: Touch javascript
+        run: git ls-files | grep js\$ | xargs touch
+        shell: bash
+
       # Work around https://github.com/actions/cache/issues/403 by using GNU tar
       # instead of BSD tar.
       - name: Install GNU tar
