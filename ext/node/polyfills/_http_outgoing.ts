@@ -498,11 +498,9 @@ Object.defineProperties(
       const outputLength = this.outputData.length;
       if (socket && outputLength > 0) {
         const { data, encoding, callback } = this.outputData.shift();
-        console.log("flushBody: writing", { data });
         this._writeRaw(data, encoding, callback);
         if (this.outputData.length > 0) {
           this.on("drain", () => {
-            console.log("drain emitted");
             this._flushBody();
           });
         }
@@ -512,14 +510,8 @@ Object.defineProperties(
     /** Right after socket is ready, we need to writeHeader() to setup the request and
      *  client. This is invoked by onSocket(). */
     _flushHeaders() {
-      console.log("flushHeaders");
       if (this.socket) {
-        console.log("socket found: ", {
-          headerSent: this._headerSent,
-          header: this._header,
-        });
         if (!this._headerSent) {
-          console.log("_writeHeader invoked");
           this._writeHeader();
           this._headerSent = true;
         }
@@ -533,14 +525,12 @@ Object.defineProperties(
       // if socket is ready, write the data after headers are written.
       // if socket is not ready, buffer data in outputbuffer.
       if (this.socket && !this.socket.connecting) {
-        console.log("_send(): im never invoked");
         if (!this._headerSent && this._header !== null) {
           this._writeHeader();
           this._headerSent = true;
         }
 
         if (this._headerSent) {
-          console.log("_send(): writeRaw", data, encoding, callback);
           return this._writeRaw(data, encoding, callback);
         }
       } else {
@@ -558,7 +548,6 @@ Object.defineProperties(
         //     });
         //   });
         // }
-        console.log("_send(): pushing to outputData:", this.outputData.length);
         this.outputData.push({ data, encoding, callback });
       }
     },
@@ -591,7 +580,6 @@ Object.defineProperties(
         }).catch((e) => {
           this._requestSendError = e;
         });
-        console.log("flushing data:", data, ret);
       }
 
       this.outputData = [];
@@ -606,7 +594,6 @@ Object.defineProperties(
       encoding?: string | null,
       callback?: () => void,
     ) {
-      console.trace("_writeRaw invoked:", data.length);
       if (typeof data === "string") {
         data = Buffer.from(data, encoding);
       }
@@ -614,20 +601,11 @@ Object.defineProperties(
         data = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
       }
       if (data.buffer.byteLength > 0) {
-        console.log(
-          "writing to",
-          this._bodyWriteRid,
-          "desired size",
-          this._bodyWriter.desiredSize,
-          "writer",
-          this._bodyWriter,
-        );
         this._bodyWriter.ready.then(() => {
           if (this._bodyWriter.desiredSize > 0) {
             this._bodyWriter.write(data).then(() => {
               callback?.();
               if (this.outputData.length == 0) {
-                console.log("emitting finish for", { data });
                 this.emit("finish");
               }
               this.emit("drain");
