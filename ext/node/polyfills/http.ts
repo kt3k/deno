@@ -15,7 +15,7 @@ import { TextEncoder } from "ext:deno_web/08_text_encoding.js";
 import { setTimeout } from "ext:deno_web/02_timers.js";
 import {
   _normalizeArgs,
-  createConnection as netCreateConnection,
+  createConnection,
   ListenOptions,
   Socket,
 } from "node:net";
@@ -414,7 +414,7 @@ class ClientRequest extends OutgoingMessage {
         }
       } else {
         debug("CLIENT use net.createConnection", optsWithoutSignal);
-        this.onSocket(netCreateConnection(optsWithoutSignal));
+        this.onSocket(createConnection(optsWithoutSignal));
       }
     }
   }
@@ -696,6 +696,7 @@ class ClientRequest extends OutgoingMessage {
     }
     this.aborted = true;
     this.emit("abort");
+    //process.nextTick(emitAbortNT, this);
     this.destroy();
   }
 
