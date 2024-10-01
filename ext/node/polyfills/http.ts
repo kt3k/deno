@@ -641,12 +641,13 @@ class ClientRequest extends OutgoingMessage {
     if (chunk) {
       this.write_(chunk, encoding, null, true);
     } else if (!this._headerSent) {
-      if (this.socket && !this.socket.connecting) {
+      if (
+        (this.socket && !this.socket.connecting) || // socket is not connecting, or
+        (!this.socket && this.outputData.length === 0) // no data to send
+      ) {
         this._contentLength = 0;
         this._implicitHeader();
         this._send("", "latin1");
-      } else {
-        //
       }
     }
     if (this.socket && this._bodyWriter) {

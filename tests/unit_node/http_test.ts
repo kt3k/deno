@@ -665,9 +665,7 @@ Deno.test("[node/http] server unref", async () => {
   assertEquals(statusCode, 0);
 });
 
-Deno.test("[node/http] ClientRequest handle non-string headers", {
-  ignore: true,
-}, async () => {
+Deno.test("[node/http] ClientRequest handle non-string headers", async () => {
   // deno-lint-ignore no-explicit-any
   let headers: any;
   const { promise, resolve, reject } = Promise.withResolvers<void>();
