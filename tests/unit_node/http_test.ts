@@ -705,7 +705,6 @@ Deno.test("[node/https] ClientRequest uses HTTP/1.1", async () => {
   req.once("error", (e) => reject(e));
   req.end();
   await promise;
-  console.log(body);
   assertEquals(body, "HTTP/1.1");
 });
 
@@ -795,14 +794,13 @@ Deno.test("[node/http] ClientRequest PUT", async () => {
   assertEquals(body, "hello world");
 });
 
-Deno.test("[node/http] ClientRequest search params", {
-  ignore: true,
-}, async () => {
+Deno.test("[node/http] ClientRequest search params", async () => {
   let body = "";
   const { promise, resolve, reject } = Promise.withResolvers<void>();
   const req = http.request({
-    host: "localhost:4545",
-    path: "search_params?foo=bar",
+    host: "localhost",
+    port: 4545,
+    path: "/search_params?foo=bar",
   }, (resp) => {
     resp.on("data", (chunk) => {
       body += chunk;
