@@ -665,7 +665,7 @@ class ClientRequest extends OutgoingMessage {
       } catch {
         //
       }
-    }
+    };
     if (this.socket && this._bodyWriter) {
       finish();
     } else {
