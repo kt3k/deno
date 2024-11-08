@@ -37,6 +37,7 @@ import {
 import { ares_strerror } from "ext:deno_node/internal_binding/ares.ts";
 import { notImplemented } from "ext:deno_node/_utils.ts";
 import { isWindows } from "ext:deno_node/_util/os.ts";
+import { op_node_lookup_host } from "ext:core/ops";
 
 interface LookupAddress {
   address: string;
@@ -69,6 +70,15 @@ export function getaddrinfo(
   verbatim: boolean,
 ): number {
   let addresses: string[] = [];
+
+  if (family === 0) {
+    op_node_lookup_host(hostname).then((result) => {
+      req.oncomplete(0, result);
+    }, (err) => {
+      req.oncomplete(codeMap.get("EAI_NODATA")!, addresses);
+    });
+    return 0;
+  }
 
   // TODO(cmorten): use hints
   // REF: https://nodejs.org/api/dns.html#dns_supported_getaddrinfo_flags
