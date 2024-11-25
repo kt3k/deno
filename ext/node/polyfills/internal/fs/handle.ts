@@ -5,13 +5,15 @@
 
 import { EventEmitter } from "node:events";
 import { Buffer } from "node:buffer";
-import { promises, read, write } from "node:fs";
+import { read } from "ext:deno_node/_fs/_fs_read.ts";
+import { write } from "ext:deno_node/_fs/_fs_write.mjs";
+import { type Stats, type BigIntStats, statPromise } from "ext:deno_node/_fs/_fs_stat.ts";
+import { writeFilePromise } from "ext:deno_node/_fs/_fs_writeFile.ts";
+import { readFilePromise } from "ext:deno_node/_fs/_fs_readFile.ts";
 import {
-  BigIntStats,
   BinaryOptionsArgument,
   FileOptionsArgument,
   ReadOptions,
-  Stats,
   TextOptionsArgument,
 } from "ext:deno_node/_fs/_fs_common.ts";
 import { core } from "ext:core/mod.js";
@@ -77,7 +79,7 @@ export class FileHandle extends EventEmitter {
   readFile(
     opt?: TextOptionsArgument | BinaryOptionsArgument | FileOptionsArgument,
   ): Promise<string | Buffer> {
-    return promises.readFile(this, opt);
+    return readFilePromise(this, opt);
   }
 
   write(
@@ -136,7 +138,7 @@ export class FileHandle extends EventEmitter {
   }
 
   writeFile(data, options): Promise<void> {
-    return fsCall(promises.writeFile, this, data, options);
+    return fsCall(writeFilePromise, this, data, options);
   }
 
   close(): Promise<void> {
@@ -148,7 +150,7 @@ export class FileHandle extends EventEmitter {
   stat(options: { bigint: false }): Promise<Stats>;
   stat(options: { bigint: true }): Promise<BigIntStats>;
   stat(options?: { bigint: boolean }): Promise<Stats | BigIntStats> {
-    return fsCall(promises.fstat, this, options);
+    return fsCall(statPromise, this, options);
   }
 }
 
@@ -161,7 +163,7 @@ function fsCall(fn, handle, ...args) {
     });
   }
 
-  return fn(handle.fd, ...args);
+  return fn(handle, ...args);
 }
 
 export default {

@@ -4,12 +4,12 @@
 // deno-lint-ignore-file prefer-primordials
 
 import {
-  BigIntStats,
+  type BigIntStats,
   CFISBIS,
   statCallback,
   statCallbackBigInt,
   statOptions,
-  Stats,
+  type Stats,
 } from "ext:deno_node/_fs/_fs_stat.ts";
 import { FsFile } from "ext:deno_fs/30_fs.js";
 

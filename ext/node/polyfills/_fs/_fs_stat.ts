@@ -6,6 +6,7 @@
 import { denoErrorToNodeError } from "ext:deno_node/internal/errors.ts";
 import { promisify } from "ext:deno_node/internal/util.mjs";
 import { primordials } from "ext:core/mod.js";
+import { FileHandle } from "ext:deno_node/internal/fs/handle.ts";
 
 const { ObjectCreate, ObjectAssign } = primordials;
 
@@ -353,19 +354,19 @@ export type statCallbackBigInt = (err: Error | null, stat: BigIntStats) => void;
 
 export type statCallback = (err: Error | null, stat: Stats) => void;
 
-export function stat(path: string | URL, callback: statCallback): void;
+export function stat(path: string | URL | FileHandle, callback: statCallback): void;
 export function stat(
-  path: string | URL,
+  path: string | URL | FileHandle,
   options: { bigint: false },
   callback: statCallback,
 ): void;
 export function stat(
-  path: string | URL,
+  path: string | URL | FileHandle,
   options: { bigint: true },
   callback: statCallbackBigInt,
 ): void;
 export function stat(
-  path: string | URL,
+  path: string | URL | FileHandle,
   optionsOrCallback: statCallback | statCallbackBigInt | statOptions,
   maybeCallback?: statCallback | statCallbackBigInt,
 ) {
@@ -380,6 +381,8 @@ export function stat(
     : { bigint: false };
 
   if (!callback) throw new Error("No callback function supplied");
+
+  path = path instanceof FileHandle ? path.fd : path;
 
   Deno.stat(path).then(
     (stat) => callback(null, CFISBIS(stat, options.bigint)),
