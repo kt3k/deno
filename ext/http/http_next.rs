@@ -1023,16 +1023,24 @@ struct HttpJoinHandle {
   listen_cancel_handle: Rc<CancelHandle>,
   rx: AsyncRefCell<tokio::sync::mpsc::Receiver<Rc<HttpRecord>>>,
   server_state: SignallingRc<HttpServerState>,
+  /// Unix socket path to be deleted on drop
+  #[cfg(unix)]
+  unix_socket_path: Option<std::path::PathBuf>,
 }
 
 impl HttpJoinHandle {
-  fn new(rx: tokio::sync::mpsc::Receiver<Rc<HttpRecord>>) -> Self {
+  fn new(
+    rx: tokio::sync::mpsc::Receiver<Rc<HttpRecord>>,
+    #[cfg(unix)] unix_socket_path: Option<std::path::PathBuf>,
+  ) -> Self {
     Self {
       join_handle: AsyncRefCell::new(None),
       connection_cancel_handle: CancelHandle::new_rc(),
       listen_cancel_handle: CancelHandle::new_rc(),
       rx: AsyncRefCell::new(rx),
       server_state: HttpServerState::new(),
+      #[cfg(unix)]
+      unix_socket_path,
     }
   }
 
@@ -1070,6 +1078,11 @@ impl Drop for HttpJoinHandle {
     // In some cases we may be dropped without closing, so let's cancel everything on the way out
     self.connection_cancel_handle.cancel();
     self.listen_cancel_handle.cancel();
+    // Clean up Unix socket file if present
+    #[cfg(unix)]
+    if let Some(path) = &self.unix_socket_path {
+      let _ = std::fs::remove_file(path);
+    }
   }
 }
 
@@ -1082,13 +1095,17 @@ pub fn op_http_serve<HTTP>(
 where
   HTTP: HttpPropertyExtractor,
 {
-  let listener =
+  let (listener, unix_socket_path) =
     HTTP::get_listener_for_rid(&mut state.borrow_mut(), listener_rid)?;
 
   let listen_properties = HTTP::listen_properties_from_listener(&listener)?;
 
   let (tx, rx) = tokio::sync::mpsc::channel(10);
-  let resource: Rc<HttpJoinHandle> = Rc::new(HttpJoinHandle::new(rx));
+  let resource: Rc<HttpJoinHandle> = Rc::new(HttpJoinHandle::new(
+    rx,
+    #[cfg(unix)]
+    unix_socket_path,
+  ));
   let listen_cancel_clone = resource.listen_cancel_handle();
 
   let lifetime = resource.lifetime();
@@ -1144,7 +1161,11 @@ where
   let listen_properties = HTTP::listen_properties_from_connection(&connection)?;
 
   let (tx, rx) = tokio::sync::mpsc::channel(10);
-  let resource: Rc<HttpJoinHandle> = Rc::new(HttpJoinHandle::new(rx));
+  let resource: Rc<HttpJoinHandle> = Rc::new(HttpJoinHandle::new(
+    rx,
+    #[cfg(unix)]
+    None,
+  ));
 
   let options = {
     let state = state.borrow();

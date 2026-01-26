@@ -25,7 +25,36 @@ pub use tokio::net::UnixStream;
 
 use crate::io::UnixStreamResource;
 use crate::ops::NetError;
-use crate::raw::NetworkListenerResource;
+
+pub struct UnixListenerResource {
+  pub listener: AsyncRefCell<UnixListener>,
+  pub path: Option<PathBuf>,
+  pub cancel: CancelHandle,
+}
+
+impl UnixListenerResource {
+  pub fn new(listener: UnixListener, path: PathBuf) -> Self {
+    Self {
+      listener: AsyncRefCell::new(listener),
+      path: Some(path),
+      cancel: Default::default(),
+    }
+  }
+
+  pub fn into_inner(self) -> (UnixListener, Option<PathBuf>) {
+    (self.listener.into_inner(), self.path)
+  }
+}
+
+impl Resource for UnixListenerResource {
+  fn name(&self) -> Cow<'_, str> {
+    "unixListener".into()
+  }
+
+  fn close(self: Rc<Self>) {
+    self.cancel.cancel();
+  }
+}
 
 /// A utility function to map OsStrings to Strings
 pub fn into_string(s: std::ffi::OsString) -> Result<String, NetError> {
@@ -66,7 +95,7 @@ pub async fn op_net_accept_unix(
   let resource = state
     .borrow()
     .resource_table
-    .get::<NetworkListenerResource<UnixListener>>(rid)
+    .get::<UnixListenerResource>(rid)
     .map_err(|_| NetError::ListenerClosed)?;
   let listener = RcRef::map(&resource, |r| &r.listener)
     .try_borrow_mut()
@@ -188,10 +217,11 @@ pub fn op_net_listen_unix(
       Some(&api_call_expr),
     )
     .map_err(NetError::Permission)?;
-  let listener = UnixListener::bind(address_path)?;
+  let path: PathBuf = AsRef::<Path>::as_ref(&address_path).to_path_buf();
+  let listener = UnixListener::bind(&path)?;
   let local_addr = listener.local_addr()?;
   let pathname = local_addr.as_pathname().map(pathstring).transpose()?;
-  let listener_resource = NetworkListenerResource::new(listener);
+  let listener_resource = UnixListenerResource::new(listener, path);
   let rid = state.resource_table.add(listener_resource);
   Ok((rid, pathname))
 }

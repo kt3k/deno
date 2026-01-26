@@ -613,9 +613,24 @@ pub fn take_network_stream_resource(
 
 /// In some cases it may be more efficient to extract the resource from the resource table and use it directly (for example, an HTTP server).
 /// This method will extract a stream from the resource table and return it, unwrapped.
+/// For Unix listeners, the socket path is also returned so it can be cleaned up on shutdown.
 pub fn take_network_stream_listener_resource(
   resource_table: &mut ResourceTable,
   listener_rid: ResourceId,
-) -> Result<NetworkStreamListener, JsErrorBox> {
-  NetworkStreamListener::take_resource(resource_table, listener_rid)
+) -> Result<(NetworkStreamListener, Option<std::path::PathBuf>), JsErrorBox> {
+  // Try Unix listener resource first (uses separate resource type for socket cleanup on drop)
+  #[cfg(unix)]
+  if let Ok(resource_rc) =
+    resource_table.take::<crate::ops_unix::UnixListenerResource>(listener_rid)
+  {
+    let resource = Rc::try_unwrap(resource_rc)
+      .map_err(|_| JsErrorBox::new("Busy", "Listener is currently in use"))?;
+    let (listener, path) = resource.into_inner();
+    return Ok((NetworkStreamListener::Unix(listener), path));
+  }
+
+  Ok((
+    NetworkStreamListener::take_resource(resource_table, listener_rid)?,
+    None,
+  ))
 }

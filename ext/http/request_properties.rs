@@ -47,10 +47,11 @@ pub trait HttpPropertyExtractor {
   type Connection;
 
   /// Given a listener [`ResourceId`], returns the [`HttpPropertyExtractor::Listener`].
+  /// For Unix sockets, also returns the socket path for cleanup on close.
   fn get_listener_for_rid(
     state: &mut OpState,
     listener_rid: ResourceId,
-  ) -> Result<Self::Listener, JsErrorBox>;
+  ) -> Result<(Self::Listener, Option<std::path::PathBuf>), JsErrorBox>;
 
   /// Given a connection [`ResourceId`], returns the [`HttpPropertyExtractor::Connection`].
   fn get_connection_for_rid(
@@ -103,7 +104,8 @@ impl HttpPropertyExtractor for DefaultHttpPropertyExtractor {
   fn get_listener_for_rid(
     state: &mut OpState,
     listener_rid: ResourceId,
-  ) -> Result<NetworkStreamListener, JsErrorBox> {
+  ) -> Result<(NetworkStreamListener, Option<std::path::PathBuf>), JsErrorBox>
+  {
     take_network_stream_listener_resource(
       &mut state.resource_table,
       listener_rid,
