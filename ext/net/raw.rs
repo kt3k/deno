@@ -626,7 +626,7 @@ pub fn take_network_stream_listener_resource(
     let resource = Rc::try_unwrap(resource_rc)
       .map_err(|_| JsErrorBox::new("Busy", "Listener is currently in use"))?;
     let (listener, path) = resource.into_inner();
-    return Ok((NetworkStreamListener::Unix(listener), path));
+    return Ok((NetworkStreamListener::Unix(listener), Some(path)));
   }
 
   Ok((

@@ -28,7 +28,7 @@ use crate::ops::NetError;
 
 pub struct UnixListenerResource {
   pub listener: AsyncRefCell<UnixListener>,
-  pub path: Option<PathBuf>,
+  pub path: PathBuf,
   pub cancel: CancelHandle,
 }
 
@@ -36,12 +36,12 @@ impl UnixListenerResource {
   pub fn new(listener: UnixListener, path: PathBuf) -> Self {
     Self {
       listener: AsyncRefCell::new(listener),
-      path: Some(path),
+      path,
       cancel: Default::default(),
     }
   }
 
-  pub fn into_inner(self) -> (UnixListener, Option<PathBuf>) {
+  pub fn into_inner(self) -> (UnixListener, PathBuf) {
     (self.listener.into_inner(), self.path)
   }
 }
