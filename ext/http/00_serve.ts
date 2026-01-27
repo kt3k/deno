@@ -87,6 +87,7 @@ import {
 import {
   listen,
   listenOptionApiName,
+  listenOptionReplaceUnixSocket,
   UpgradedConn,
 } from "ext:deno_net/01_net.js";
 import { hasTlsKeyPairOptions, listenTls } from "ext:deno_net/02_tls.js";
@@ -790,6 +791,19 @@ function serve(arg1, arg2) {
         delete envOptions.cid;
         delete envOptions.port;
         delete envOptions.path;
+        break;
+      }
+      case 5: {
+        // Unix with replace existing socket
+        envOptions = {
+          ...envOptions,
+          path: overrideHost,
+          [listenOptionReplaceUnixSocket]: true,
+        };
+        delete envOptions.hostname;
+        delete envOptions.cid;
+        delete envOptions.port;
+        break;
       }
     }
 
@@ -845,6 +859,7 @@ function serveInner(options, handler) {
     const listener = listen({
       transport: "unix",
       path: options.path,
+      [listenOptionReplaceUnixSocket]: options[listenOptionReplaceUnixSocket],
       [listenOptionApiName]: "Deno.serve",
     });
     const path = listener.addr.path;

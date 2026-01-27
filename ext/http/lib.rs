@@ -1745,6 +1745,14 @@ fn parse_serve_address(input: &str) -> (u8, String, u32, bool) {
       }
       (2, addr.to_string(), 0, duplicate)
     }
+    Some(("unix-replace", addr)) => {
+      // Unix socket path with replace existing socket
+      if addr.is_empty() {
+        log::error!("DENO_SERVE_ADDRESS: empty unix socket path");
+        return (0, String::new(), 0, duplicate);
+      }
+      (5, addr.to_string(), 0, duplicate)
+    }
     Some(("vsock", addr)) => {
       // Vsock address
       match addr.split_once(':') {
@@ -1823,6 +1831,15 @@ mod tests {
     );
 
     assert_eq!(
+      parse_serve_address("unix-replace:/var/run/socket.sock"),
+      (5, "/var/run/socket.sock".to_string(), 0, false)
+    );
+    assert_eq!(
+      parse_serve_address("duplicate,unix-replace:/var/run/socket.sock"),
+      (5, "/var/run/socket.sock".to_string(), 0, true)
+    );
+
+    assert_eq!(
       parse_serve_address("vsock:1234:5678"),
       (3, "1234".to_string(), 5678, false)
     );
@@ -1837,6 +1854,10 @@ mod tests {
 
     assert_eq!(parse_serve_address("tcp:"), (0, String::new(), 0, false));
     assert_eq!(parse_serve_address("unix:"), (0, String::new(), 0, false));
+    assert_eq!(
+      parse_serve_address("unix-replace:"),
+      (0, String::new(), 0, false)
+    );
     assert_eq!(parse_serve_address("vsock:"), (0, String::new(), 0, false));
     assert_eq!(parse_serve_address("foo:"), (0, String::new(), 0, false));
     assert_eq!(parse_serve_address("bar"), (0, String::new(), 0, false));

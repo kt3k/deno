@@ -206,6 +206,7 @@ pub fn op_net_listen_unix(
   state: &mut OpState,
   #[string] address_path: &str,
   #[string] api_name: &str,
+  replace_unix_socket: bool,
 ) -> Result<(ResourceId, Option<String>), NetError> {
   let permissions = state.borrow_mut::<PermissionsContainer>();
   let api_call_expr = format!("{}()", api_name);
@@ -216,6 +217,10 @@ pub fn op_net_listen_unix(
       Some(&api_call_expr),
     )
     .map_err(NetError::Permission)?;
+  if replace_unix_socket {
+    // Remove existing socket file if it exists
+    let _ = std::fs::remove_file(&address_path);
+  }
   let listener = UnixListener::bind(&address_path)?;
   let local_addr = listener.local_addr()?;
   let pathname = local_addr.as_pathname().map(pathstring).transpose()?;

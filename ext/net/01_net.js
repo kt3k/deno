@@ -597,6 +597,7 @@ class DatagramConn {
 }
 
 const listenOptionApiName = Symbol("listenOptionApiName");
+const listenOptionReplaceUnixSocket = Symbol("listenOptionReplaceUnixSocket");
 
 function listen(args) {
   switch (args.transport ?? "tcp") {
@@ -618,6 +619,7 @@ function listen(args) {
       const { 0: rid, 1: path } = op_net_listen_unix(
         args.path,
         args[listenOptionApiName] ?? "Deno.listen",
+        args[listenOptionReplaceUnixSocket] ?? false,
       );
       const addr = {
         transport: "unix",
@@ -760,6 +762,7 @@ export {
   listen,
   Listener,
   listenOptionApiName,
+  listenOptionReplaceUnixSocket,
   PipeConn,
   resolveDns,
   setDatagramBroadcast,
